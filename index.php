@@ -121,10 +121,12 @@ $container['helper'] = function ($c) {
         public function make_posts(array $results, $options = []) {
             $options += ['all_comments' => false];
             $all_comments = $options['all_comments'];
+            $ps = $this->db()->prepare('SELECT post_id, COUNT(id) AS `count` FROM `comments` where FIND_IN_SET(post_id, :array) group by post_id');
+            $postsCount = $ps->fetchAll(PDO::FETCH_KEY_PAIR|PDO::FETCH_GROUP);
 
             $posts = [];
             foreach ($results as $post) {
-                $post['comment_count'] = $this->fetch_first('SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?', $post['id'])['count'];
+                $post['comment_count'] = isset($postsCount[$post['id']]) ? $postsCount[$post['id']] :0;
                 $query = 'SELECT c.*, u.account_name FROM comments c INNER JOIN users u ON c.user_id = u.id WHERE c.post_id = ? ORDER BY c.created_at DESC';
 
                 if (!$all_comments) {
