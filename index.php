@@ -140,9 +140,7 @@ $container['helper'] = function ($c) {
                 $post['comments'] = array_reverse($comments);
 
                 $post['user'] = $this->fetch_first('SELECT * FROM `users` WHERE `id` = ?', $post['user_id']);
-                if ($post['user']['del_flg'] == 0) {
-                    $posts[] = $post;
-                }
+                $posts[] = $post;
             }
             return $posts;
         }
@@ -287,7 +285,7 @@ $app->get('/', function (Request $request, Response $response) {
     $me = $this->get('helper')->get_session_user();
 
     $db = $this->get('db');
-    $query = 'SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` ORDER BY `created_at` DESC LIMIT ';
+    $query = 'SELECT p.id, p.user_id, p.body, p.mime, p.created_at FROM posts p INNER JOIN users u ON u.id = p.user_id WHERE u.del_flg = 0 ORDER BY p.created_at DESC LIMIT ';
     $query .= POSTS_PER_PAGE;
     $ps = $db->prepare($query);
     $ps->execute();
@@ -301,7 +299,7 @@ $app->get('/posts', function (Request $request, Response $response) {
     $params = $request->getParams();
     $max_created_at = $params['max_created_at'] ?? null;
     $db = $this->get('db');
-    $query = 'SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` WHERE `created_at` <= ? ORDER BY `created_at` DESC LIMIT ';
+    $query = 'SELECT p.id, p.user_id, p.body, p.mime, p.created_at FROM posts p INNER JOIN users u ON u.id = p.user_id WHERE u.del_flg = 0 AND p.created_at <= ? ORDER BY p.created_at DESC LIMIT ';
     $query .= POSTS_PER_PAGE;
     $ps = $db->prepare($query);
     $ps->execute([$max_created_at === null ? null : $max_created_at]);
@@ -313,7 +311,7 @@ $app->get('/posts', function (Request $request, Response $response) {
 
 $app->get('/posts/{id}', function (Request $request, Response $response, $args) {
     $db = $this->get('db');
-    $ps = $db->prepare('SELECT * FROM `posts` WHERE `id` = ?');
+    $ps = $db->prepare('SELECT * FROM posts p INNER JOIN users u ON u.id = p.user_id WHERE p.id = ? AND u.del_flg = 0');
     $ps->execute([$args['id']]);
     $results = $ps->fetchAll(PDO::FETCH_ASSOC);
     $posts = $this->get('helper')->make_posts($results, ['all_comments' => true]);
@@ -475,7 +473,7 @@ $app->get('/@{account_name}', function (Request $request, Response $response, $a
         return $response->withStatus(404)->write('404');
     }
 
-    $query = 'SELECT `id`, `user_id`, `body`, `created_at`, `mime` FROM `posts` WHERE `user_id` = ? ORDER BY `created_at` DESC LIMIT ';
+    $query = 'SELECT p.id, p.user_id, p.body, p.mime, p.created_at FROM posts p INNER JOIN users u ON u.id = p.user_id WHERE u.del_flg = 0 AND p.user_id = ? ORDER BY p.created_at DESC LIMIT ';
     $query .= POSTS_PER_PAGE;
     $ps = $db->prepare($query);
     $ps->execute([$user['id']]);
