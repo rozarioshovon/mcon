@@ -125,7 +125,8 @@ $container['helper'] = function ($c) {
             $posts = [];
             foreach ($results as $post) {
                 $post['comment_count'] = $this->fetch_first('SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?', $post['id'])['count'];
-                $query = 'SELECT * FROM `comments` WHERE `post_id` = ? ORDER BY `created_at` DESC';
+                $query = 'SELECT c.*, u.account_name FROM comments c INNER JOIN users u ON c.user_id = u.id WHERE c.post_id = ? ORDER BY c.created_at DESC';
+
                 if (!$all_comments) {
                     $query .= ' LIMIT 3';
                 }
@@ -133,10 +134,6 @@ $container['helper'] = function ($c) {
                 $ps = $this->db()->prepare($query);
                 $ps->execute([$post['id']]);
                 $comments = $ps->fetchAll(PDO::FETCH_ASSOC);
-                foreach ($comments as &$comment) {
-                    $comment['user'] = $this->fetch_first('SELECT * FROM `users` WHERE `id` = ?', $comment['user_id']);
-                }
-                unset($comment);
                 $post['comments'] = array_reverse($comments);
 
                 $post['user'] = $this->fetch_first('SELECT * FROM `users` WHERE `id` = ?', $post['user_id']);
