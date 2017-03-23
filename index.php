@@ -311,7 +311,7 @@ $app->get('/posts', function (Request $request, Response $response) {
 
 $app->get('/posts/{id}', function (Request $request, Response $response, $args) {
     $db = $this->get('db');
-    $ps = $db->prepare('SELECT * FROM posts p INNER JOIN users u ON u.id = p.user_id WHERE p.id = ? AND u.del_flg = 0');
+    $ps = $db->prepare('SELECT p.* FROM posts p INNER JOIN users u ON u.id = p.user_id WHERE p.id = ? AND u.del_flg = 0');
     $ps->execute([$args['id']]);
     $results = $ps->fetchAll(PDO::FETCH_ASSOC);
     $posts = $this->get('helper')->make_posts($results, ['all_comments' => true]);
